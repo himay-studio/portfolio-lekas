@@ -1,0 +1,613 @@
+/*
+ * Lekas, lapisan dasar.
+ *
+ * Blok token di bawah disalin apa adanya dari DESIGN.md bagian 2. Nama token
+ * adalah kontrak dan tidak boleh diubah. Rasio kontras setiap pasangan sudah
+ * dihitung di DESIGN.md bagian 3, jadi warna baru TIDAK boleh ditambahkan di
+ * sini tanpa menghitung ulang rasionya lebih dulu.
+ */
+
+:root {
+  /* ---------- permukaan terang ---------- */
+  --bg:              #F4F2F7;
+  --surface:         #FFFFFF;
+  --surface-2:       #EDEAF3;
+  --surface-3:       #E3DFEC;
+
+  /* ---------- garis ---------- */
+  --border:          #D7D2E2;
+  --border-strong:   #B9B2C9;
+  --control-border:  #76708A;
+
+  /* ---------- teks ---------- */
+  --text:            #16131F;
+  --text-muted:      #4B4459;
+  --text-subtle:     #5A5369;
+  --text-disabled:   #8A8398;
+  --text-on-brand:   #FFFFFF;
+
+  /* ---------- merek ---------- */
+  --brand:           #6D28A8;
+  --brand-hover:     #5A1F8C;
+  --brand-deep:      #46186E;
+  --brand-soft:      #F0E7F9;
+  --brand-bright:    #B588E8;
+
+  /* ---------- sidebar kiri (gelap) ---------- */
+  --nav-bg:             #1A1424;
+  --nav-surface:        #261E33;
+  --nav-active:         #8A3FCB;
+  --nav-marker:         #C79BF2;
+  --nav-text:           #D6CFE2;
+  --nav-muted:          #A79DB8;
+  --nav-border:         #332A42;
+  --nav-control-border: #6E6383;
+
+  /* ---------- fokus ---------- */
+  --focus:           #6D28A8;
+  --focus-on-dark:   #E3D0FA;
+
+  /* ---------- semantik ---------- */
+  --success:         #12723F;
+  --success-soft:    #E2F3E8;
+  --success-ink:     #0C5A31;
+  --pay:             var(--success);
+  --pay-hover:       #0D5C32;
+
+  --warning:         #8A5300;
+  --warning-soft:    #FBEEDA;
+  --warning-ink:     #7A4A00;
+
+  --danger:          #B3241B;
+  --danger-soft:     #FBE5E3;
+  --danger-ink:      #8F1C15;
+
+  --info:            #1A5FB4;
+  --info-soft:       #E5EEFA;
+  --info-ink:        #14508F;
+
+  /* ---------- deret grafik ---------- */
+  --chart-1: #6D28A8;
+  --chart-2: #12723F;
+  --chart-3: #A05F0C;
+  --chart-4: #1A5FB4;
+  --chart-5: #A8206C;
+  --chart-6: #106B76;
+
+  /* ---------- bentuk dan ruang ---------- */
+  --radius: 0;
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+
+  /* ---------- elevasi ---------- */
+  --shadow-1: 0 1px 2px rgba(22, 19, 31, 0.08);
+  --shadow-2: 0 2px 8px rgba(22, 19, 31, 0.12);
+  --shadow-3: 0 8px 32px rgba(22, 19, 31, 0.20);
+  --scrim:    rgba(22, 19, 31, 0.55);
+
+  /* ---------- gerak ---------- */
+  --dur-fast:  120ms;
+  --dur-base:  180ms;
+  --dur-page:  220ms;
+  --ease:      cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-out:  cubic-bezier(0, 0, 0.2, 1);
+
+  /* ---------- ukuran tetap ---------- */
+  --nav-w:           248px;
+  --nav-w-collapsed:  64px;
+  --topbar-h:         56px;
+  --row-h:            44px;
+  --control-h:        40px;
+  --control-h-lg:     52px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dasar                                                                       */
+/* -------------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+* { border-radius: 0; }
+
+html, body { margin: 0; padding: 0; }
+
+html {
+  /*
+   * Menutup kelas kegagalan R19 pada akarnya. Satu elemen anak yang meleset
+   * beberapa piksel akan membuat seluruh dokumen bisa digulir ke samping, dan
+   * di layar sentuh itu terasa seperti halaman yang rusak. Wadah yang memang
+   * bergulir horizontal (grid Kasir, papan Kanban, .snap-row) mengurus
+   * gulirannya sendiri di dalam kotaknya masing masing.
+   */
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/22px var(--font-ui), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  color: var(--text);
+  margin: 0;
+}
+
+h1 { font-size: 28px; line-height: 34px; font-weight: 700; }
+h2 { font-size: 22px; line-height: 28px; font-weight: 700; }
+h3 { font-size: 17px; line-height: 24px; font-weight: 600; }
+
+p { margin: 0 0 var(--sp-3); }
+p:last-child { margin-bottom: 0; }
+
+a { color: var(--brand); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+img, svg { display: block; max-width: 100%; }
+
+/* Ikon Lucide mengikuti bahasa sudut siku produk ini (ART-DIRECTION 9). */
+svg.lucide { stroke-linecap: square; stroke-linejoin: miter; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.pada-gelap :focus-visible { outline-color: var(--focus-on-dark); }
+
+/* Hanya untuk pembaca layar, tetap ada di pohon aksesibilitas. */
+.sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lewati {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  padding: var(--sp-2) var(--sp-3);
+}
+.lewati:focus { left: var(--sp-3); top: var(--sp-3); }
+
+/* -------------------------------------------------------------------------- */
+/* Angka                                                                       */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * DESIGN.md 4.2. Setiap angka di dalam kolom memakai IBM Plex Sans dengan
+ * tabular-nums supaya rupiah lurus dari baris ke baris. Manrope hanya untuk
+ * angka tunggal besar yang tidak perlu sejajar dengan baris lain.
+ */
+.num {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.num-besar {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+.negatif { color: var(--danger); }
+
+/* -------------------------------------------------------------------------- */
+/* Judul plus label sekunder (R50, DESIGN.md 6.9)                              */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Dua simpul teks inline yang bersebelahan akan menempel jadi `Kopi SusuKopi`.
+ * Membungkusnya dalam kolom flex dengan anak yang display block adalah satu
+ * satunya perbaikan yang menyentuh sebabnya, bukan menambah spasi di JSX.
+ */
+.stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stack > .t {
+  display: block;
+  font: 500 14px/20px var(--font-ui), system-ui, sans-serif;
+  color: var(--text);
+}
+.stack > .s {
+  display: block;
+  font: 400 12px/16px var(--font-ui), system-ui, sans-serif;
+  color: var(--text-muted);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tombol                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  height: var(--control-h);
+  padding: 0 var(--sp-4);
+  border: 0;
+  background: var(--brand);
+  color: #FFFFFF;
+  font: 600 14px/1 var(--font-ui), system-ui, sans-serif;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { background: var(--brand-hover); text-decoration: none; }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] {
+  background: var(--surface-3);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+.btn[disabled]:active { transform: none; }
+
+.btn-bayar { background: var(--pay); }
+.btn-bayar:hover { background: var(--pay-hover); }
+
+.btn-sekunder {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--control-border);
+}
+.btn-sekunder:hover { background: var(--surface-2); }
+
+.btn-halus {
+  background: transparent;
+  color: var(--brand);
+  font-weight: 600;
+}
+.btn-halus:hover { background: var(--brand-soft); }
+
+.btn-rusak { background: var(--danger); }
+.btn-rusak:hover { background: var(--danger-ink); }
+
+/*
+ * Varian terbalik untuk latar gelap.
+ *
+ * Ini kegagalan R20 yang persis terjadi di Wanantara: satu kelas tombol
+ * dirancang untuk latar terang lalu dipakai ulang di atas header gelap, dan
+ * rasionya jatuh dari 8.85 ke 1.52 tanpa ada yang mengukurnya. Kontrol yang
+ * muncul di dua latar WAJIB punya dua varian, bukan satu warna yang dipaksakan.
+ */
+.btn-gelap {
+  background: transparent;
+  color: #FFFFFF;
+  border: 1px solid var(--nav-control-border);
+}
+.btn-gelap:hover { background: var(--nav-surface); }
+
+.btn-lg { height: var(--control-h-lg); padding: 0 var(--sp-5); font-size: 15px; }
+.btn-sm { height: 32px; padding: 0 var(--sp-3); font-size: 13px; }
+.btn-blok { width: 100%; }
+.btn-ikon { width: var(--control-h); padding: 0; }
+
+/* -------------------------------------------------------------------------- */
+/* Kontrol formulir                                                            */
+/* -------------------------------------------------------------------------- */
+
+.bidang { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bidang > label {
+  display: block;
+  font: 500 13px/18px var(--font-ui), system-ui, sans-serif;
+  color: var(--text-muted);
+}
+.bantuan {
+  display: block;
+  font: 400 12px/16px var(--font-ui), system-ui, sans-serif;
+  color: var(--text-subtle);
+}
+.galat {
+  display: block;
+  font: 400 12px/16px var(--font-ui), system-ui, sans-serif;
+  color: var(--danger-ink);
+}
+
+/*
+ * Semua batas kontrol memakai --control-border (4.71 di surface).
+ * --border gagal di 1.48 dan hanya boleh jadi garis kisi tabel. Kotak input
+ * kosong yang tidak terlihat batasnya adalah kegagalan R19 di Komodrift.
+ */
+.input,
+.textarea {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--sp-3);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--control-border);
+  font: 400 14px/22px var(--font-ui), system-ui, sans-serif;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.textarea { height: auto; min-height: 88px; padding: var(--sp-2) var(--sp-3); resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--text-subtle); }
+.input:focus, .textarea:focus { border-color: var(--brand); outline-offset: 1px; }
+.input[aria-invalid='true'] { border-color: var(--danger); }
+.input[disabled], .textarea[disabled] {
+  background: var(--surface-3);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+.input-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Kotak centang dan sakelar, keduanya wajib batas --control-border (R20). */
+.cek {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+  font: 400 14px/22px var(--font-ui), system-ui, sans-serif;
+  color: var(--text);
+}
+.cek input { position: absolute; opacity: 0; width: 0; height: 0; }
+.cek-kotak {
+  flex: 0 0 auto;
+  width: 18px; height: 18px;
+  display: grid; place-items: center;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  color: transparent;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.cek input:checked + .cek-kotak {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #FFFFFF;
+}
+.cek input:focus-visible + .cek-kotak { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.sakelar {
+  position: relative;
+  width: 44px; height: 24px;
+  background: var(--surface-3);
+  border: 1px solid var(--control-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--dur-fast) var(--ease);
+  flex: 0 0 auto;
+}
+.sakelar::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: var(--text-muted);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-fast) var(--ease);
+}
+.sakelar[aria-checked='true'] { background: var(--brand); border-color: var(--brand); }
+.sakelar[aria-checked='true']::after { transform: translateX(20px); background: #FFFFFF; }
+
+/* -------------------------------------------------------------------------- */
+/* Badge dan chip                                                              */
+/* -------------------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px 8px;
+  border: 1px solid var(--control-border);
+  font: 600 12px/16px var(--font-ui), system-ui, sans-serif;
+  white-space: nowrap;
+}
+.badge-neutral { background: var(--surface-2); color: var(--text-muted); }
+.badge-brand   { background: var(--brand-soft);   color: var(--brand-deep); }
+.badge-success { background: var(--success-soft); color: var(--success-ink); }
+.badge-warning { background: var(--warning-soft); color: var(--warning-ink); }
+.badge-danger  { background: var(--danger-soft);  color: var(--danger-ink); }
+.badge-info    { background: var(--info-soft);    color: var(--info-ink); }
+
+.badge-pekat { border-color: transparent; color: #FFFFFF; }
+.badge-pekat.badge-brand   { background: var(--brand); }
+.badge-pekat.badge-success { background: var(--success); }
+.badge-pekat.badge-warning { background: var(--warning); }
+.badge-pekat.badge-danger  { background: var(--danger); }
+.badge-pekat.badge-info    { background: var(--info); }
+.badge-pekat.badge-neutral { background: var(--text-muted); }
+
+/* -------------------------------------------------------------------------- */
+/* Kartu dan permukaan                                                         */
+/* -------------------------------------------------------------------------- */
+
+.kartu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: var(--sp-4);
+}
+.kartu-besar { padding: var(--sp-5); }
+.kartu-judul {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.kosong {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-7) var(--sp-4);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+}
+.kosong-judul { font: 600 15px/22px var(--font-ui), system-ui, sans-serif; color: var(--text); }
+
+/* Rangka muat, bukan pemintal layar penuh yang membuat tata letak melompat. */
+.rangka {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: rangka-geser 1.4s ease infinite;
+  height: 14px;
+}
+@keyframes rangka-geser {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Snap carousel mobile (R48, DESIGN.md 8.3)                                   */
+/* -------------------------------------------------------------------------- */
+
+.snap-row { display: grid; gap: var(--sp-3); }
+
+@media (max-width: 768px) {
+  .snap-row {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    /*
+     * `overflow-x: auto` SAJA tidak menahan luapan dokumen. Anak yang menonjol
+     * masih ikut menghitung lebar dokumen lewat jalur cat, jadi scrollWidth
+     * halaman tetap melebihi innerWidth walaupun wadahnya sudah bergulir benar.
+     * `contain: paint` yang menutup jalur itu. Diukur di Jaring: 1943 lawan 375.
+     */
+    contain: paint;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--sp-1);
+  }
+  .snap-row > * { flex: 0 0 82vw; scroll-snap-align: start; }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Perpindahan halaman (R46)                                                   */
+/* -------------------------------------------------------------------------- */
+
+.page-enter { animation: masuk var(--dur-page) var(--ease-out) both; }
+
+@keyframes masuk {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/*
+ * Gerak berkurang. Durasi dipangkas dan transformasi dimatikan, tapi keadaan
+ * AKHIR tetap terlihat. Konten tidak boleh tersangkut di opacity 0, yang
+ * persis kegagalan R34 dalam bentuk lain.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .page-enter { animation: none; opacity: 1; transform: none; }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Halaman landing dan masuk                                                   */
+/* -------------------------------------------------------------------------- */
+
+.luar { min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); }
+
+.luar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.luar-logo { height: 28px; width: auto; }
+.luar-aksi { display: flex; align-items: center; gap: var(--sp-2); }
+
+.luar-main { flex: 1; }
+.luar-wrap { max-width: 1120px; margin: 0 auto; padding: var(--sp-7) var(--sp-5); }
+
+.hero { display: grid; gap: var(--sp-7); align-items: center; }
+@media (min-width: 1025px) { .hero { grid-template-columns: 1fr 1fr; } }
+
+.hero-mata {
+  display: block;
+  font: 600 12px/16px var(--font-ui), system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-deep);
+  margin-bottom: var(--sp-3);
+}
+.hero h1 { font-size: 40px; line-height: 46px; font-weight: 800; margin-bottom: var(--sp-4); }
+@media (max-width: 768px) { .hero h1 { font-size: 30px; line-height: 36px; } }
+.hero-teks { color: var(--text-muted); font-size: 16px; line-height: 26px; max-width: 46ch; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+.fitur-grid { display: grid; gap: var(--sp-4); margin-top: var(--sp-8); }
+@media (min-width: 769px) { .fitur-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1025px) { .fitur-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.fitur-ikon {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+  margin-bottom: var(--sp-3);
+}
+
+.luar-foot {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: var(--sp-5);
+}
+.luar-foot-isi {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Layar masuk. Kredensial demo ditampilkan, tidak ada auth sungguhan. */
+.masuk { min-height: 100dvh; display: grid; place-items: center; padding: var(--sp-5); }
+.masuk-kotak { width: 100%; max-width: 400px; }
+.masuk-logo { height: 32px; width: auto; margin: 0 auto var(--sp-5); }
+.masuk-kredensial {
+  background: var(--brand-soft);
+  border: 1px solid var(--control-border);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.masuk-kredensial dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px var(--sp-3); }
+.masuk-kredensial dt { font: 400 12px/18px var(--font-ui), system-ui, sans-serif; color: var(--brand-deep); }
+.masuk-kredensial dd {
+  margin: 0;
+  font: 500 12px/18px var(--font-mono), ui-monospace, monospace;
+  color: var(--brand-deep);
+}
+.masuk-peran { display: grid; gap: var(--sp-2); }
+.masuk-peran-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--dur-fast) var(--ease);
+}
+.masuk-peran-btn:hover { background: var(--surface-2); }
+.masuk-peran-btn[aria-pressed='true'] { background: var(--brand-soft); border-color: var(--brand); }

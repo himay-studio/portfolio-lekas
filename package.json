@@ -1,0 +1,28 @@
+{
+  "name": "portfolio-lekas",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "clean": "rm -rf out .next",
+    "prebuild": "rm -rf out .next",
+    "build": "next build",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "qa": "node scripts/qa-check.mjs",
+    "deploy": "npm run clean && next build && npx wrangler pages deploy out --project-name=himaystudio-portfolio-lekas --branch=main"
+  },
+  "dependencies": {
+    "lucide-react": "0.544.0",
+    "next": "15.5.22",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "puppeteer-core": "^23.11.1",
+    "typescript": "5.8.3"
+  }
+}

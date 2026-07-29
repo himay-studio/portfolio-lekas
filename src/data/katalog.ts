@@ -1,0 +1,566 @@
+import type { Kategori, Produk } from './types';
+
+/**
+ * Katalog demo.
+ *
+ * Stage 3 menegakkan BENTUKNYA. Isinya sengaja cukup untuk membuat rel
+ * kategori, grid Kasir, tabel produk, dan aturan carousel R48 benar benar
+ * terlihat jujur, tapi belum sebanyak target akhir. Stage 5 menggemukkan ini
+ * jadi puluhan baris per kategori sesuai semangat R41.
+ *
+ * Perhatikan bahwa TIDAK ADA produk yang namanya berupa ukuran atau warna.
+ * "Kaus Polos" punya dimensi Ukuran dan Warna, dan tetap satu produk (R42).
+ */
+
+export const KATEGORI: Kategori[] = [
+  { id: 'kopi', nama: 'Kopi', tipe: 'fnb', warna: 1, urutan: 1 },
+  { id: 'non-kopi', nama: 'Non Kopi', tipe: 'fnb', warna: 6, urutan: 2 },
+  { id: 'makanan', nama: 'Makanan', tipe: 'fnb', warna: 3, urutan: 3 },
+  { id: 'roti', nama: 'Roti dan Kue', tipe: 'fnb', warna: 5, urutan: 4 },
+  { id: 'sembako', nama: 'Sembako', tipe: 'retail', warna: 2, urutan: 5 },
+  { id: 'minuman-kemasan', nama: 'Minuman Kemasan', tipe: 'retail', warna: 4, urutan: 6 },
+  { id: 'rumah-tangga', nama: 'Rumah Tangga', tipe: 'retail', warna: 6, urutan: 7 },
+  { id: 'fesyen', nama: 'Fesyen', tipe: 'retail', warna: 5, urutan: 8 },
+];
+
+const UKURAN_MINUMAN = {
+  id: 'ukuran',
+  nama: 'Ukuran',
+  wajib: true,
+  ganda: false,
+  opsi: [
+    { id: 'reguler', nama: 'Reguler', deltaHarga: 0, stok: null, bawaan: true },
+    { id: 'besar', nama: 'Besar', deltaHarga: 5000, stok: null },
+  ],
+};
+
+const SUHU = {
+  id: 'suhu',
+  nama: 'Suhu',
+  wajib: true,
+  ganda: false,
+  opsi: [
+    { id: 'dingin', nama: 'Dingin', deltaHarga: 0, stok: null, bawaan: true },
+    { id: 'panas', nama: 'Panas', deltaHarga: 0, stok: null },
+  ],
+};
+
+const TOPPING = {
+  id: 'topping',
+  nama: 'Topping',
+  wajib: false,
+  ganda: true,
+  opsi: [
+    { id: 'extra-shot', nama: 'Extra shot', deltaHarga: 6000, stok: null },
+    { id: 'boba', nama: 'Boba', deltaHarga: 5000, stok: null },
+    { id: 'oat-milk', nama: 'Susu oat', deltaHarga: 8000, stok: null },
+  ],
+};
+
+export const PRODUK: Produk[] = [
+  {
+    id: 'p-kopi-susu',
+    sku: 'FNB-K-001',
+    barcode: '8991002101011',
+    nama: 'Kopi Susu',
+    kategoriId: 'kopi',
+    hargaDasar: 22000,
+    hargaModal: 8500,
+    stok: 120,
+    stokMinimum: 20,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU, TOPPING],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Espresso, susu segar, dan gula aren cair. Menu paling laris sepanjang hari.',
+  },
+  {
+    id: 'p-americano',
+    sku: 'FNB-K-002',
+    barcode: '8991002101028',
+    nama: 'Americano',
+    kategoriId: 'kopi',
+    hargaDasar: 18000,
+    hargaModal: 5200,
+    stok: 140,
+    stokMinimum: 20,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Dua shot espresso dan air. Pilihan pahit yang bersih.',
+  },
+  {
+    id: 'p-cappuccino',
+    sku: 'FNB-K-003',
+    barcode: '8991002101035',
+    nama: 'Cappuccino',
+    kategoriId: 'kopi',
+    hargaDasar: 25000,
+    hargaModal: 9000,
+    stok: 90,
+    stokMinimum: 20,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Espresso dengan busa susu tebal.',
+  },
+  {
+    id: 'p-matcha-latte',
+    sku: 'FNB-N-001',
+    barcode: '8991002102018',
+    nama: 'Matcha Latte',
+    kategoriId: 'non-kopi',
+    hargaDasar: 26000,
+    hargaModal: 10500,
+    stok: 64,
+    stokMinimum: 15,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU, TOPPING],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Matcha upacara kelas kedua, susu segar, sedikit gula.',
+  },
+  {
+    id: 'p-teh-manis',
+    sku: 'FNB-N-002',
+    barcode: '8991002102025',
+    nama: 'Teh Manis',
+    kategoriId: 'non-kopi',
+    hargaDasar: 10000,
+    hargaModal: 2200,
+    stok: 200,
+    stokMinimum: 30,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Teh tubruk manis, dingin atau panas.',
+  },
+  {
+    id: 'p-cokelat',
+    sku: 'FNB-N-003',
+    barcode: '8991002102032',
+    nama: 'Cokelat',
+    kategoriId: 'non-kopi',
+    hargaDasar: 24000,
+    hargaModal: 9200,
+    stok: 12,
+    stokMinimum: 15,
+    satuan: 'gelas',
+    dimensi: [UKURAN_MINUMAN, SUHU],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Cokelat bubuk asli dan susu segar.',
+  },
+  {
+    id: 'p-nasi-goreng',
+    sku: 'FNB-M-001',
+    barcode: '8991002103015',
+    nama: 'Nasi Goreng',
+    kategoriId: 'makanan',
+    hargaDasar: 28000,
+    hargaModal: 12000,
+    stok: 40,
+    stokMinimum: 10,
+    satuan: 'porsi',
+    dimensi: [
+      {
+        id: 'level',
+        nama: 'Level Pedas',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: 'tidak-pedas', nama: 'Tidak pedas', deltaHarga: 0, stok: null, bawaan: true },
+          { id: 'sedang', nama: 'Sedang', deltaHarga: 0, stok: null },
+          { id: 'pedas', nama: 'Pedas', deltaHarga: 0, stok: null },
+        ],
+      },
+      {
+        id: 'tambahan',
+        nama: 'Tambahan',
+        wajib: false,
+        ganda: true,
+        opsi: [
+          { id: 'telur', nama: 'Telur mata sapi', deltaHarga: 6000, stok: null },
+          { id: 'ayam', nama: 'Ayam suwir', deltaHarga: 10000, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Nasi goreng kampung dengan acar dan kerupuk.',
+  },
+  {
+    id: 'p-mi-ayam',
+    sku: 'FNB-M-002',
+    barcode: '8991002103022',
+    nama: 'Mi Ayam',
+    kategoriId: 'makanan',
+    hargaDasar: 26000,
+    hargaModal: 11000,
+    stok: 35,
+    stokMinimum: 10,
+    satuan: 'porsi',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Mi ayam dengan sawi dan pangsit goreng.',
+  },
+  {
+    id: 'p-kentang-goreng',
+    sku: 'FNB-M-003',
+    barcode: '8991002103039',
+    nama: 'Kentang Goreng',
+    kategoriId: 'makanan',
+    hargaDasar: 20000,
+    hargaModal: 7000,
+    stok: 58,
+    stokMinimum: 12,
+    satuan: 'porsi',
+    dimensi: [
+      {
+        id: 'saus',
+        nama: 'Saus',
+        wajib: false,
+        ganda: true,
+        opsi: [
+          { id: 'keju', nama: 'Saus keju', deltaHarga: 5000, stok: null },
+          { id: 'bbq', nama: 'Bubuk barbeku', deltaHarga: 3000, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Kentang batang tebal, digoreng dua kali.',
+  },
+  {
+    id: 'p-croissant',
+    sku: 'FNB-R-001',
+    barcode: '8991002104012',
+    nama: 'Croissant',
+    kategoriId: 'roti',
+    hargaDasar: 18000,
+    hargaModal: 7500,
+    stok: 24,
+    stokMinimum: 8,
+    satuan: 'buah',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Croissant mentega, dipanggang ulang saat dipesan.',
+  },
+  {
+    id: 'p-donat-gula',
+    sku: 'FNB-R-002',
+    barcode: '8991002104029',
+    nama: 'Donat Gula',
+    kategoriId: 'roti',
+    hargaDasar: 8000,
+    hargaModal: 2600,
+    stok: 6,
+    stokMinimum: 12,
+    satuan: 'buah',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Donat empuk bertabur gula halus.',
+  },
+  {
+    id: 'p-brownies',
+    sku: 'FNB-R-003',
+    barcode: '8991002104036',
+    nama: 'Brownies',
+    kategoriId: 'roti',
+    hargaDasar: 15000,
+    hargaModal: 5400,
+    stok: 0,
+    stokMinimum: 10,
+    satuan: 'potong',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Brownies cokelat pekat, tekstur padat.',
+  },
+  {
+    id: 'p-beras',
+    sku: 'RTL-S-001',
+    barcode: '8991003201014',
+    nama: 'Beras Premium',
+    kategoriId: 'sembako',
+    hargaDasar: 72000,
+    hargaModal: 63000,
+    stok: 48,
+    stokMinimum: 10,
+    satuan: 'karung',
+    dimensi: [
+      {
+        id: 'berat',
+        nama: 'Berat',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: '5kg', nama: '5 kg', deltaHarga: 0, stok: 30, bawaan: true },
+          { id: '10kg', nama: '10 kg', deltaHarga: 68000, stok: 18 },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Beras pulen kemasan karung anyaman.',
+  },
+  {
+    id: 'p-minyak-goreng',
+    sku: 'RTL-S-002',
+    barcode: '8991003201021',
+    nama: 'Minyak Goreng',
+    kategoriId: 'sembako',
+    hargaDasar: 19500,
+    hargaModal: 17200,
+    stok: 86,
+    stokMinimum: 24,
+    satuan: 'botol',
+    dimensi: [
+      {
+        id: 'isi',
+        nama: 'Isi',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: '1l', nama: '1 liter', deltaHarga: 0, stok: null, bawaan: true },
+          { id: '2l', nama: '2 liter', deltaHarga: 18000, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Minyak goreng sawit kemasan botol.',
+  },
+  {
+    id: 'p-gula-pasir',
+    sku: 'RTL-S-003',
+    barcode: '8991003201038',
+    nama: 'Gula Pasir',
+    kategoriId: 'sembako',
+    hargaDasar: 16000,
+    hargaModal: 14100,
+    stok: 18,
+    stokMinimum: 20,
+    satuan: 'kemasan',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Gula pasir kristal putih 1 kg.',
+  },
+  {
+    id: 'p-telur',
+    sku: 'RTL-S-004',
+    barcode: '8991003201045',
+    nama: 'Telur Ayam',
+    kategoriId: 'sembako',
+    hargaDasar: 29000,
+    hargaModal: 25500,
+    stok: 32,
+    stokMinimum: 12,
+    satuan: 'tray',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Telur ayam negeri satu tray isi sepuluh.',
+  },
+  {
+    id: 'p-air-mineral',
+    sku: 'RTL-M-001',
+    barcode: '8991003202011',
+    nama: 'Air Mineral',
+    kategoriId: 'minuman-kemasan',
+    hargaDasar: 4000,
+    hargaModal: 2700,
+    stok: 240,
+    stokMinimum: 48,
+    satuan: 'botol',
+    dimensi: [
+      {
+        id: 'isi',
+        nama: 'Isi',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: '600ml', nama: '600 ml', deltaHarga: 0, stok: null, bawaan: true },
+          { id: '1500ml', nama: '1500 ml', deltaHarga: 3500, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: true,
+    deskripsi: 'Air mineral kemasan botol plastik.',
+  },
+  {
+    id: 'p-susu-kotak',
+    sku: 'RTL-M-002',
+    barcode: '8991003202028',
+    nama: 'Susu Kotak',
+    kategoriId: 'minuman-kemasan',
+    hargaDasar: 7500,
+    hargaModal: 5900,
+    stok: 96,
+    stokMinimum: 24,
+    satuan: 'kotak',
+    dimensi: [
+      {
+        id: 'rasa',
+        nama: 'Rasa',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: 'putih', nama: 'Putih', deltaHarga: 0, stok: null, bawaan: true },
+          { id: 'cokelat', nama: 'Cokelat', deltaHarga: 500, stok: null },
+          { id: 'stroberi', nama: 'Stroberi', deltaHarga: 500, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Susu UHT kemasan 250 ml.',
+  },
+  {
+    id: 'p-deterjen',
+    sku: 'RTL-R-001',
+    barcode: '8991003203018',
+    nama: 'Deterjen Cair',
+    kategoriId: 'rumah-tangga',
+    hargaDasar: 32000,
+    hargaModal: 27400,
+    stok: 44,
+    stokMinimum: 12,
+    satuan: 'botol',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Deterjen cair konsentrat isi 1 liter.',
+  },
+  {
+    id: 'p-sabun-batang',
+    sku: 'RTL-R-002',
+    barcode: '8991003203025',
+    nama: 'Sabun Batang',
+    kategoriId: 'rumah-tangga',
+    hargaDasar: 5500,
+    hargaModal: 4100,
+    stok: 130,
+    stokMinimum: 30,
+    satuan: 'batang',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Sabun mandi batang, kemasan satuan.',
+  },
+  {
+    id: 'p-baterai',
+    sku: 'RTL-R-003',
+    barcode: '8991003203032',
+    nama: 'Baterai AA',
+    kategoriId: 'rumah-tangga',
+    hargaDasar: 14000,
+    hargaModal: 10300,
+    stok: 9,
+    stokMinimum: 20,
+    satuan: 'pak',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Baterai alkalin AA isi empat.',
+  },
+  {
+    /**
+     * Contoh R42 yang paling gamblang di katalog ini.
+     *
+     * Warna dan ukuran adalah DIMENSI, jadi penyaring warna di halaman Produk
+     * mempersempit varian, bukan mengganti nama produknya. Laporan produk
+     * terlaris tetap membaca satu baris "Kaus Polos", bukan enam baris warna.
+     */
+    id: 'p-kaus-polos',
+    sku: 'RTL-F-001',
+    barcode: '8991003204015',
+    nama: 'Kaus Polos',
+    kategoriId: 'fesyen',
+    hargaDasar: 75000,
+    hargaModal: 42000,
+    stok: 68,
+    stokMinimum: 15,
+    satuan: 'potong',
+    dimensi: [
+      {
+        id: 'ukuran',
+        nama: 'Ukuran',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: 's', nama: 'S', deltaHarga: 0, stok: 14, bawaan: true },
+          { id: 'm', nama: 'M', deltaHarga: 0, stok: 22 },
+          { id: 'l', nama: 'L', deltaHarga: 5000, stok: 20 },
+          { id: 'xl', nama: 'XL', deltaHarga: 10000, stok: 12 },
+        ],
+      },
+      {
+        id: 'warna',
+        nama: 'Warna',
+        wajib: true,
+        ganda: false,
+        opsi: [
+          { id: 'hitam', nama: 'Hitam', deltaHarga: 0, stok: null, bawaan: true },
+          { id: 'putih', nama: 'Putih', deltaHarga: 0, stok: null },
+          { id: 'navy', nama: 'Navy', deltaHarga: 0, stok: null },
+        ],
+      },
+    ],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Kaus katun combed 30s, potongan lurus.',
+  },
+  {
+    id: 'p-tote-bag',
+    sku: 'RTL-F-002',
+    barcode: '8991003204022',
+    nama: 'Tote Bag Kanvas',
+    kategoriId: 'fesyen',
+    hargaDasar: 55000,
+    hargaModal: 31000,
+    stok: 26,
+    stokMinimum: 10,
+    satuan: 'buah',
+    dimensi: [],
+    aktif: true,
+    favorit: false,
+    deskripsi: 'Tas kanvas tebal dengan jahitan rangkap.',
+  },
+];
+
+export const petaKategori = new Map(KATEGORI.map((k) => [k.id, k]));
+export const petaProduk = new Map(PRODUK.map((p) => [p.id, p]));
+
+/** Harga terendah dan tertinggi setelah delta varian. Dipakai di kartu produk. */
+export function rentangHarga(p: Produk): { min: number; maks: number } {
+  let min = p.hargaDasar;
+  let maks = p.hargaDasar;
+  for (const d of p.dimensi) {
+    const delta = d.opsi.map((o) => o.deltaHarga);
+    if (d.ganda) {
+      // Opsi ganda hanya bisa menambah, jadi ikut menaikkan batas atas saja.
+      maks += delta.filter((x) => x > 0).reduce((a, b) => a + b, 0);
+    } else {
+      min += Math.min(...delta, 0);
+      maks += Math.max(...delta, 0);
+    }
+  }
+  return { min, maks };
+}
+
+export type StatusStok = 'aman' | 'menipis' | 'habis';
+
+export function statusStok(p: Produk): StatusStok {
+  if (p.stok <= 0) return 'habis';
+  if (p.stok <= p.stokMinimum) return 'menipis';
+  return 'aman';
+}

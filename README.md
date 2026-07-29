@@ -27,6 +27,8 @@ Dua janji, dua duanya bisa dibuktikan di layar:
 | [`DESIGN.md`](./DESIGN.md) | Sistem desain: token warna lengkap dengan rasio kontras terhitung, tipografi, ruang, elevasi, spesifikasi komponen, gerak, responsif |
 | [`ART-DIRECTION.md`](./ART-DIRECTION.md) | Arah visual, konsep dan geometri logo, prompt siap pakai, favicon, Open Graph, foto produk katalog, avatar, ikon antarmuka, daftar aset |
 | [`LOGO.md`](./LOGO.md) | Ekstrak siap eksekusi untuk Asset Forge: geometri SVG, dua varian wajib, favicon, prompt cadangan, jalur serah terima |
+| [`LAYOUT-ARCHITECTURE.md`](./LAYOUT-ARCHITECTURE.md) | Peta rute, hierarki komponen, keputusan desain beserta alasannya, mesin uang, dan daftar yang ditunda ke Stage 5 |
+| [`MEDIA.md`](./MEDIA.md) | Manifes media. Nol aset perlu digenerate, dengan alasan per kategori |
 
 ---
 
@@ -66,7 +68,23 @@ Ditambah halaman landing produk ringkas di `/` dan `/login` dengan kredensial de
 - Next.js dengan `output: 'export'` (static export), dideploy ke Cloudflare Pages.
 - Data demo statis di `src/data/*.ts`, state di sisi klien, `localStorage` untuk mutasi demo. Tanpa backend, tanpa auth sungguhan.
 - Deploy: Pages project `himaystudio-portfolio-lekas`, domain publik **`portfolio-lekas.himaystudio.com`**. URL `pages.dev` hanya cadangan internal dan tidak pernah dipakai sebagai URL publik (R26, R40).
-- `rm -rf out .next` sebelum setiap build deploy (R61).
+- `rm -rf out .next` sebelum setiap build deploy (R61), sudah terpasang sebagai `prebuild` di `package.json`.
+
+### Perintah
+
+```bash
+npm install
+npm run dev          # pengembangan
+npm run typecheck    # tsc --noEmit
+npm run build        # bersihkan, build, ekspor statis ke out/
+npm run qa           # sapuan terukur seluruh rute di 5 breakpoint
+node scripts/qa-probe.mjs   # probe terarah plus tangkapan layar ke qa-shots/
+npm run deploy       # bersihkan, build, kirim ke Cloudflare Pages
+```
+
+`scripts/qa-setup.mjs` menyalakan Chromium di runtime ini sepenuhnya dari ruang
+pengguna, tanpa root. Dipanggil otomatis oleh dua skrip QA di atas, jadi
+"tidak ada peramban di runtime ini" bukan alasan yang sah untuk melewati R51.
 
 ---
 
