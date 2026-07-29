@@ -35,7 +35,10 @@ export function tulis<T>(kunci: string, nilai: T): void {
  * kalau tidak React membuang seluruh hasil server dan melapor ketidakcocokan
  * hidrasi. Satu render tambahan jauh lebih murah daripada itu.
  */
-export function usePreferensi<T>(kunci: string, bawaan: T): [T, (n: T) => void, boolean] {
+export function usePreferensi<T>(
+  kunci: string,
+  bawaan: T,
+): [T, (n: T | ((prev: T) => T)) => void, boolean] {
   const [nilai, setNilai] = useState<T>(bawaan);
   const [siap, setSiap] = useState(false);
 
@@ -48,10 +51,17 @@ export function usePreferensi<T>(kunci: string, bawaan: T): [T, (n: T) => void, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kunci]);
 
+  // Menerima nilai langsung atau fungsi updater seperti `setState` React,
+  // supaya pemanggil yang sudah terbiasa memakai `setBaris((lama) => ...)`
+  // tidak perlu menulis ulang seluruh logikanya saat berpindah ke penyimpanan
+  // yang bertahan di localStorage.
   const simpan = useCallback(
-    (n: T) => {
-      setNilai(n);
-      tulis(kunci, n);
+    (n: T | ((prev: T) => T)) => {
+      setNilai((prev) => {
+        const berikutnya = typeof n === 'function' ? (n as (p: T) => T)(prev) : n;
+        tulis(kunci, berikutnya);
+        return berikutnya;
+      });
     },
     [kunci],
   );

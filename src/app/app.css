@@ -1164,7 +1164,8 @@
 }
 @media (max-width: 1024px) { .krj-bar { display: flex; } }
 
-/* Struk. Lebar tetap, meniru cetakan printer termal 80mm. */
+/* Struk. Lebar tetap, meniru cetakan printer termal 80mm, atau 58mm kalau
+   `data-lebar="58"` (dibaca dari pengaturan printer). */
 .struk {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1173,10 +1174,32 @@
   color: var(--text);
   max-width: 340px;
 }
+.struk[data-lebar='58'] { max-width: 240px; font-size: 11px; }
 .struk-tengah { text-align: center; }
 .struk-garis { border: 0; border-top: 1px dashed var(--border-strong); margin: var(--sp-2) 0; }
 .struk-baris { display: flex; justify-content: space-between; gap: var(--sp-3); }
 .struk-baris span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/*
+ * Cetak (simulasi). `window.print()` dipicu dari tombol Cetak, dan aturan ini
+ * menyembunyikan SELURUH halaman kecuali area yang ditandai `data-area-cetak`,
+ * supaya hasil cetaknya benar benar cuma isinya, bukan seluruh sidebar dan
+ * topbar aplikasi. Struk (`data-area-cetak="struk"`) dijepit selebar kertas
+ * termal 80mm/58mm; area lain (laporan) dicetak selebar halaman.
+ */
+@media print {
+  body * { visibility: hidden; }
+  [data-area-cetak], [data-area-cetak] * { visibility: visible; }
+  [data-area-cetak] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  [data-area-cetak='struk'] { max-width: none; width: 80mm; }
+  [data-area-cetak='struk'][data-lebar='58'] { width: 58mm; }
+}
 .struk-tebal { font-weight: 500; }
 
 /* -------------------------------------------------------------------------- */

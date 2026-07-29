@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { PENGATURAN_PAJAK } from '@/data/operasional';
+import { useEffect, useState } from 'react';
 import { rupiah } from '@/lib/format';
 import { hitung } from '@/lib/kasir';
-import { CatatanStage, Sakelar } from '@/components/ui/Primitives';
+import { usePajakStore } from '@/lib/pengaturanStore';
+import { Badge, Sakelar } from '@/components/ui/Primitives';
 import { Select } from '@/components/ui/Select';
 
 const OPSI_PEMBULATAN = [
@@ -26,12 +26,29 @@ const OPSI_PEMBULATAN = [
  * dari dasar kena, lalu pajak dihitung dari dasar kena DITAMBAH service charge.
  */
 export function PajakForm() {
-  const [pajakAktif, setPajakAktif] = useState(PENGATURAN_PAJAK.pajakAktif);
-  const [pajak, setPajak] = useState(String(PENGATURAN_PAJAK.pajakPersen));
-  const [serviceAktif, setServiceAktif] = useState(PENGATURAN_PAJAK.serviceAktif);
-  const [service, setService] = useState(String(PENGATURAN_PAJAK.servicePersen));
-  const [pembulatan, setPembulatan] = useState(String(PENGATURAN_PAJAK.pembulatan));
-  const [termasuk, setTermasuk] = useState(PENGATURAN_PAJAK.hargaSudahTermasukPajak);
+  const { pajak: tersimpan, simpanPajak, siap } = usePajakStore();
+  const [pajakAktif, setPajakAktif] = useState(tersimpan.pajakAktif);
+  const [pajak, setPajak] = useState(String(tersimpan.pajakPersen));
+  const [serviceAktif, setServiceAktif] = useState(tersimpan.serviceAktif);
+  const [service, setService] = useState(String(tersimpan.servicePersen));
+  const [pembulatan, setPembulatan] = useState(String(tersimpan.pembulatan));
+  const [termasuk, setTermasuk] = useState(tersimpan.hargaSudahTermasukPajak);
+  const [barusanSimpan, setBarusanSimpan] = useState(false);
+
+  // Timpaan localStorage baru terbaca setelah mount (lihat catatan hidrasi di
+  // `lib/storage.ts`), jadi begitu siap, form disinkronkan sekali dari nilai
+  // yang sudah tersimpan supaya pengunjung yang kembali melihat pilihannya
+  // sendiri, bukan nilai demo bawaan.
+  useEffect(() => {
+    if (!siap) return;
+    setPajakAktif(tersimpan.pajakAktif);
+    setPajak(String(tersimpan.pajakPersen));
+    setServiceAktif(tersimpan.serviceAktif);
+    setService(String(tersimpan.servicePersen));
+    setPembulatan(String(tersimpan.pembulatan));
+    setTermasuk(tersimpan.hargaSudahTermasukPajak);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siap]);
 
   const contoh = hitung(
     [{ qty: 2, hargaSatuan: 22000, diskonItem: null }, { qty: 1, hargaSatuan: 28000, diskonItem: null }],
@@ -40,11 +57,31 @@ export function PajakForm() {
       servicePersen: serviceAktif ? Number(service) || 0 : 0,
       pajakPersen: pajakAktif ? Number(pajak) || 0 : 0,
       pembulatan: Number(pembulatan) || 0,
+      hargaSudahTermasukPajak: termasuk,
     },
   );
 
+  function simpan() {
+    simpanPajak({
+      pajakAktif,
+      pajakPersen: Number(pajak) || 0,
+      serviceAktif,
+      servicePersen: Number(service) || 0,
+      pembulatan: Number(pembulatan) || 0,
+      hargaSudahTermasukPajak: termasuk,
+    });
+    setBarusanSimpan(true);
+    setTimeout(() => setBarusanSimpan(false), 2400);
+  }
+
   return (
-    <div className="kolom-2">
+    <form
+      className="kolom-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        simpan();
+      }}
+    >
       <section className="kartu">
         <div className="kartu-judul">
           <h2>Pajak dan service charge</h2>
@@ -142,14 +179,18 @@ export function PajakForm() {
               <dd className="num-besar" style={{ fontSize: 24, lineHeight: '30px' }}>{rupiah(contoh.total)}</dd>
             </div>
           </dl>
+          <p className="bantuan" style={{ marginTop: 'var(--sp-3)' }}>
+            {termasuk
+              ? 'Harga sudah termasuk pajak aktif: pajak diekstrak dari dasar kena ditambah service, tidak ditambahkan lagi di atasnya.'
+              : 'Pajak dan service ditambahkan di atas harga jual, seperti biasa.'}
+          </p>
         </section>
 
-        <CatatanStage>
-          Sakelar harga sudah termasuk pajak belum mengubah perhitungan. Stage 5 menambahkan mode
-          itu ke `lib/kasir.ts` beserta pengujiannya, karena membaliknya menyentuh setiap total di
-          aplikasi.
-        </CatatanStage>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+          <button type="submit" className="btn">Simpan perubahan</button>
+          {barusanSimpan ? <Badge tone="success">Tersimpan</Badge> : null}
+        </div>
       </div>
-    </div>
+    </form>
   );
 }

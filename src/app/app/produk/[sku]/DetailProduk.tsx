@@ -2,33 +2,47 @@
 
 import { useState } from 'react';
 import { petaKategori, rentangHarga, statusStok } from '@/data/katalog';
-import type { OpsiTerpilih, Produk } from '@/data/types';
-import { rupiah } from '@/lib/format';
+import type { DimensiVarian, OpsiTerpilih, Produk } from '@/data/types';
+import { jam, rupiah, tanggalPendek } from '@/lib/format';
 import { opsiBawaan, ringkasOpsi } from '@/lib/kasir';
+import { bisa, useSesi } from '@/lib/sesi';
+import { useProdukStore } from '@/lib/produkStore';
 import { inisialProduk, warnaProduk } from '@/components/kasir/ubin';
 import { PageHeader } from '@/components/shell/PageHeader';
-import { Badge, CatatanStage, Cek } from '@/components/ui/Primitives';
+import { Badge, Cek } from '@/components/ui/Primitives';
+import { Overlay } from '@/components/ui/Overlay';
 
 const TONE = { aman: 'success', menipis: 'warning', habis: 'danger' } as const;
 const LABEL = { aman: 'Stok aman', menipis: 'Stok menipis', habis: 'Stok habis' } as const;
+
+let penghitungDimensi = 0;
 
 /**
  * Halaman detail produk.
  *
  * Inilah tempat R42 paling mudah dilanggar. Memilih warna atau ukuran di sini
  * MENUKAR VARIAN DI TEMPAT: harga, SKU, dan stok berubah, nama produknya tidak,
- * dan alamat halamannya tidak berpindah. Katalog yang menjadikan tiap warna
- * sebagai produk sendiri akan membuat pemilih warna melompat ke slug lain, dan
- * gejalanya terlihat sebagai "filter warna mengganti nama produk".
+ * dan alamat halamannya tidak berpindah.
+ *
+ * `produk` yang diterima dari server adalah data dasar hasil build statis.
+ * Begitu mount, halaman ini membaca versi HIDUPNYA dari `produkStore` (yang
+ * sama dipakai Kasir dan halaman Produk), jadi ubah produk, sesuaikan stok,
+ * dan pengelola dimensi di sini langsung terlihat di seluruh aplikasi tanpa
+ * build ulang. Render pertama tetap memakai `produk` dasar sehingga tidak ada
+ * ketidakcocokan hidrasi.
  */
-export function DetailProduk({ produk }: { produk: Produk }) {
+export function DetailProduk({ produk: dasar }: { produk: Produk }) {
+  const { produk: semua, ubahProduk, sesuaikanStok, riwayatStok, ubahDimensi } = useProdukStore();
+  const [kasir] = useSesi();
+  const bolehKelola = bisa(kasir.peran, 'produk');
+  const produk = semua.find((p) => p.id === dasar.id) ?? dasar;
+
   const [pilih, setPilih] = useState<OpsiTerpilih[]>(() => opsiBawaan(produk));
   const s = statusStok(produk);
   const kategori = petaKategori.get(produk.kategoriId);
   const r = rentangHarga(produk);
   const hargaVarian = produk.hargaDasar + pilih.reduce((a, o) => a + o.delta, 0);
 
-  // Stok varian, kalau dimensi yang dipilih memang punya stok sendiri.
   const stokVarian = produk.dimensi
     .flatMap((d) => d.opsi.filter((o) => pilih.some((p) => p.dimensiId === d.id && p.opsiId === o.id)))
     .map((o) => o.stok)
@@ -44,6 +58,46 @@ export function DetailProduk({ produk }: { produk: Produk }) {
       : p.filter((o) => !(o.dimensiId === dimensiId && o.opsiId === opsiId))));
   }
 
+  // ---------- ubah produk ----------
+  const [bukaUbah, setBukaUbah] = useState(false);
+  const [formUbah, setFormUbah] = useState(() => ({
+    nama: produk.nama, hargaDasar: String(produk.hargaDasar), hargaModal: String(produk.hargaModal),
+    stokMinimum: String(produk.stokMinimum), satuan: produk.satuan, deskripsi: produk.deskripsi,
+  }));
+
+  // ---------- sesuaikan stok ----------
+  const [bukaStok, setBukaStok] = useState(false);
+  const [deltaStok, setDeltaStok] = useState('0');
+  const [alasanStok, setAlasanStok] = useState('');
+  const riwayat = riwayatStok(produk.id);
+
+  // ---------- pengelola dimensi varian ----------
+  const [bukaDimensi, setBukaDimensi] = useState(false);
+  const [dimensiKerja, setDimensiKerja] = useState<DimensiVarian[]>(produk.dimensi);
+
+  function bukaPengelolaDimensi() {
+    setDimensiKerja(produk.dimensi.map((d) => ({ ...d, opsi: d.opsi.map((o) => ({ ...o })) })));
+    setBukaDimensi(true);
+  }
+
+  function tambahDimensiBaru() {
+    penghitungDimensi += 1;
+    setDimensiKerja((d) => [...d, {
+      id: `dim-${penghitungDimensi}`,
+      nama: 'Dimensi baru',
+      wajib: false,
+      ganda: false,
+      opsi: [{ id: `opsi-${penghitungDimensi}-1`, nama: 'Opsi 1', deltaHarga: 0, stok: null }],
+    }]);
+  }
+
+  function tambahOpsi(dimensiId: string) {
+    penghitungDimensi += 1;
+    setDimensiKerja((ds) => ds.map((d) => (d.id === dimensiId
+      ? { ...d, opsi: [...d.opsi, { id: `opsi-${penghitungDimensi}`, nama: 'Opsi baru', deltaHarga: 0, stok: null }] }
+      : d)));
+  }
+
   return (
     <>
       <PageHeader
@@ -53,12 +107,12 @@ export function DetailProduk({ produk }: { produk: Produk }) {
           { label: 'Produk', href: '/app/produk/' },
           { label: produk.nama },
         ]}
-        aksi={(
+        aksi={bolehKelola ? (
           <>
-            <button type="button" className="btn">Ubah produk</button>
-            <button type="button" className="btn btn-sekunder">Sesuaikan stok</button>
+            <button type="button" className="btn" onClick={() => setBukaUbah(true)}>Ubah produk</button>
+            <button type="button" className="btn btn-sekunder" onClick={() => setBukaStok(true)}>Sesuaikan stok</button>
           </>
-        )}
+        ) : null}
       />
 
       <div className="kolom-2">
@@ -66,7 +120,14 @@ export function DetailProduk({ produk }: { produk: Produk }) {
           <section className="kartu">
             <div className="kartu-judul">
               <h2>Varian</h2>
-              <Badge tone={TONE[s]}>{LABEL[s]}</Badge>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+                <Badge tone={TONE[s]}>{LABEL[s]}</Badge>
+                {bolehKelola ? (
+                  <button type="button" className="btn btn-halus btn-sm" onClick={bukaPengelolaDimensi}>
+                    Kelola dimensi
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {produk.dimensi.length === 0 ? (
@@ -147,10 +208,36 @@ export function DetailProduk({ produk }: { produk: Produk }) {
             </dl>
           </section>
 
-          <CatatanStage>
-            Riwayat pergerakan stok, kartu produk terkait, dan pengelola dimensi varian belum ada.
-            Stage 5 menambahkannya beserta form ubah produk.
-          </CatatanStage>
+          <section className="kartu">
+            <div className="kartu-judul">
+              <h2>Riwayat pergerakan stok</h2>
+            </div>
+            {riwayat.length === 0 ? (
+              <p className="bantuan">
+                Belum ada penyesuaian manual pada produk ini. Penjualan lewat layar Kasir mengurangi
+                stok langsung tanpa dicatat di sini; kolom ini khusus penyesuaian manual (retur dari
+                pemasok, barang rusak, koreksi hitung fisik).
+              </p>
+            ) : (
+              <div className="tbl-kartu">
+                {riwayat.map((l) => (
+                  <div key={l.id} className="tbl-kartu-item" style={{ cursor: 'default' }}>
+                    <div className="item-kartu-atas">
+                      <span className="stack">
+                        <span className="t">{l.alasan}</span>
+                        <span className="s">{tanggalPendek(l.waktu.slice(0, 10))} {jam(l.waktu.slice(0, 19))}</span>
+                      </span>
+                      <span className={`num ${l.delta < 0 ? 'negatif' : ''}`}>{l.delta > 0 ? '+' : ''}{l.delta}</span>
+                    </div>
+                    <div className="tbl-kartu-baris">
+                      <span className="tbl-kartu-label">Stok sesudah</span>
+                      <span className="tbl-kartu-nilai num">{l.stokSesudah} {produk.satuan}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         <div className="kolom-sisi">
@@ -167,8 +254,7 @@ export function DetailProduk({ produk }: { produk: Produk }) {
                 {inisialProduk(produk.nama)}
               </span>
               <span className="stack">
-                {/* Nama produk TIDAK berubah saat varian ditukar. Yang berubah
-                    hanya harga, stok, dan label varian di bawahnya (R42). */}
+                {/* Nama produk TIDAK berubah saat varian ditukar (R42). */}
                 <span className="t" style={{ fontSize: 17, fontWeight: 600 }}>{produk.nama}</span>
                 <span className="s">{pilih.length > 0 ? ringkasOpsi(pilih) : 'Tanpa varian'}</span>
               </span>
@@ -191,6 +277,230 @@ export function DetailProduk({ produk }: { produk: Produk }) {
           </section>
         </div>
       </div>
+
+      {/* ---------- ubah produk ---------- */}
+      <Overlay
+        buka={bukaUbah}
+        onTutup={() => setBukaUbah(false)}
+        judul="Ubah produk"
+        ket={produk.sku}
+        lebar
+        kaki={(
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                ubahProduk(produk.id, {
+                  nama: formUbah.nama.trim() || produk.nama,
+                  hargaDasar: Number(formUbah.hargaDasar) || 0,
+                  hargaModal: Number(formUbah.hargaModal) || 0,
+                  stokMinimum: Number(formUbah.stokMinimum) || 0,
+                  satuan: formUbah.satuan.trim() || produk.satuan,
+                  deskripsi: formUbah.deskripsi,
+                });
+                setBukaUbah(false);
+              }}
+            >
+              Simpan perubahan
+            </button>
+            <button type="button" className="btn btn-sekunder" onClick={() => setBukaUbah(false)}>Batal</button>
+          </>
+        )}
+      >
+        <div className="form-grid form-grid-2">
+          <div className="bidang">
+            <label htmlFor="u-nama">Nama produk</label>
+            <input id="u-nama" className="input" value={formUbah.nama} onChange={(e) => setFormUbah((f) => ({ ...f, nama: e.target.value }))} />
+          </div>
+          <div className="bidang">
+            <label htmlFor="u-satuan">Satuan</label>
+            <input id="u-satuan" className="input" value={formUbah.satuan} onChange={(e) => setFormUbah((f) => ({ ...f, satuan: e.target.value }))} />
+          </div>
+          <div className="bidang">
+            <label htmlFor="u-harga">Harga dasar</label>
+            <input id="u-harga" className="input input-num" type="number" min={0} value={formUbah.hargaDasar} onChange={(e) => setFormUbah((f) => ({ ...f, hargaDasar: e.target.value }))} />
+          </div>
+          <div className="bidang">
+            <label htmlFor="u-modal">Harga modal</label>
+            <input id="u-modal" className="input input-num" type="number" min={0} value={formUbah.hargaModal} onChange={(e) => setFormUbah((f) => ({ ...f, hargaModal: e.target.value }))} />
+          </div>
+          <div className="bidang">
+            <label htmlFor="u-stok-min">Stok minimum</label>
+            <input id="u-stok-min" className="input input-num" type="number" min={0} value={formUbah.stokMinimum} onChange={(e) => setFormUbah((f) => ({ ...f, stokMinimum: e.target.value }))} />
+          </div>
+        </div>
+        <div className="bidang" style={{ marginTop: 'var(--sp-3)' }}>
+          <label htmlFor="u-deskripsi">Deskripsi</label>
+          <textarea id="u-deskripsi" className="textarea" value={formUbah.deskripsi} onChange={(e) => setFormUbah((f) => ({ ...f, deskripsi: e.target.value }))} />
+        </div>
+      </Overlay>
+
+      {/* ---------- sesuaikan stok ---------- */}
+      <Overlay
+        buka={bukaStok}
+        onTutup={() => setBukaStok(false)}
+        judul="Sesuaikan stok"
+        ket={`Stok sekarang ${produk.stok} ${produk.satuan}`}
+        kaki={(
+          <>
+            <button
+              type="button"
+              className="btn"
+              disabled={Number(deltaStok) === 0 || !alasanStok.trim()}
+              onClick={() => {
+                sesuaikanStok(produk.id, Number(deltaStok) || 0, alasanStok.trim());
+                setDeltaStok('0');
+                setAlasanStok('');
+                setBukaStok(false);
+              }}
+            >
+              Simpan penyesuaian
+            </button>
+            <button type="button" className="btn btn-sekunder" onClick={() => setBukaStok(false)}>Batal</button>
+          </>
+        )}
+      >
+        <div className="form-grid">
+          <div className="bidang">
+            <label htmlFor="d-stok">Perubahan stok (positif menambah, negatif mengurangi)</label>
+            <input id="d-stok" className="input input-num" type="number" value={deltaStok} onChange={(e) => setDeltaStok(e.target.value)} />
+          </div>
+          <div className="bidang">
+            <label htmlFor="d-alasan">Alasan</label>
+            <input
+              id="d-alasan"
+              className="input"
+              value={alasanStok}
+              onChange={(e) => setAlasanStok(e.target.value)}
+              placeholder="Koreksi hitung fisik, barang rusak, retur pemasok"
+            />
+          </div>
+          <p className="bantuan">
+            Stok sesudah penyesuaian: {Math.max(0, produk.stok + (Number(deltaStok) || 0))} {produk.satuan}
+          </p>
+        </div>
+      </Overlay>
+
+      {/* ---------- pengelola dimensi varian ---------- */}
+      <Overlay
+        buka={bukaDimensi}
+        onTutup={() => setBukaDimensi(false)}
+        judul="Kelola dimensi varian"
+        ket="Ukuran, topping, dan warna tetap dimensi pada produk yang sama (R42), bukan produk baru"
+        lebar
+        kaki={(
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                ubahDimensi(produk.id, dimensiKerja);
+                setBukaDimensi(false);
+              }}
+            >
+              Simpan dimensi
+            </button>
+            <button type="button" className="btn btn-sekunder" onClick={tambahDimensiBaru}>
+              Tambah dimensi
+            </button>
+            <button type="button" className="btn btn-halus" onClick={() => setBukaDimensi(false)}>Batal</button>
+          </>
+        )}
+      >
+        <div className="form-grid">
+          {dimensiKerja.length === 0 ? (
+            <p className="bantuan">Belum ada dimensi. Tambah dimensi untuk memberi produk ini varian ukuran, warna, atau topping.</p>
+          ) : null}
+          {dimensiKerja.map((d, di) => (
+            <div key={d.id} className="kartu" style={{ display: 'grid', gap: 'var(--sp-3)' }}>
+              <div className="form-grid form-grid-2">
+                <div className="bidang">
+                  <label htmlFor={`dim-nama-${d.id}`}>Nama dimensi</label>
+                  <input
+                    id={`dim-nama-${d.id}`}
+                    className="input"
+                    value={d.nama}
+                    onChange={(e) => setDimensiKerja((ds) => ds.map((x, i) => (i === di ? { ...x, nama: e.target.value } : x)))}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--sp-4)', alignItems: 'center', paddingTop: 20 }}>
+                  <Cek
+                    nilai={d.wajib}
+                    onUbah={(n) => setDimensiKerja((ds) => ds.map((x, i) => (i === di ? { ...x, wajib: n } : x)))}
+                  >
+                    Wajib dipilih
+                  </Cek>
+                  <Cek
+                    nilai={d.ganda}
+                    onUbah={(n) => setDimensiKerja((ds) => ds.map((x, i) => (i === di ? { ...x, ganda: n } : x)))}
+                  >
+                    Boleh lebih dari satu
+                  </Cek>
+                </div>
+              </div>
+
+              <div className="form-grid">
+                {d.opsi.map((o, oi) => (
+                  <div key={o.id} className="form-grid form-grid-2" style={{ alignItems: 'end' }}>
+                    <div className="bidang">
+                      <label htmlFor={`opsi-nama-${o.id}`}>Nama opsi</label>
+                      <input
+                        id={`opsi-nama-${o.id}`}
+                        className="input"
+                        value={o.nama}
+                        onChange={(e) => setDimensiKerja((ds) => ds.map((x, i) => (i === di
+                          ? { ...x, opsi: x.opsi.map((y, j) => (j === oi ? { ...y, nama: e.target.value } : y)) }
+                          : x)))}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                      <div className="bidang" style={{ flex: 1 }}>
+                        <label htmlFor={`opsi-delta-${o.id}`}>Selisih harga</label>
+                        <input
+                          id={`opsi-delta-${o.id}`}
+                          className="input input-num"
+                          type="number"
+                          value={o.deltaHarga}
+                          onChange={(e) => setDimensiKerja((ds) => ds.map((x, i) => (i === di
+                            ? { ...x, opsi: x.opsi.map((y, j) => (j === oi ? { ...y, deltaHarga: Number(e.target.value) || 0 } : y)) }
+                            : x)))}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sekunder btn-sm"
+                        style={{ marginTop: 'auto', height: 40 }}
+                        disabled={d.opsi.length <= 1}
+                        onClick={() => setDimensiKerja((ds) => ds.map((x, i) => (i === di
+                          ? { ...x, opsi: x.opsi.filter((_, j) => j !== oi) }
+                          : x)))}
+                      >
+                        Hapus opsi
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <button type="button" className="btn btn-halus btn-sm" onClick={() => tambahOpsi(d.id)}>
+                    Tambah opsi
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-sekunder btn-sm"
+                  onClick={() => setDimensiKerja((ds) => ds.filter((_, i) => i !== di))}
+                >
+                  Hapus dimensi ini
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Overlay>
     </>
   );
 }

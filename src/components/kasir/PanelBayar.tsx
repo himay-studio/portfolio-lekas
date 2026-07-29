@@ -13,6 +13,7 @@ import {
   type BarisKeranjang,
   type RingkasanUang,
 } from '@/lib/kasir';
+import { usePrinterStore, useTokoStore } from '@/lib/pengaturanStore';
 import { Badge } from '@/components/ui/Primitives';
 import { Overlay } from '@/components/ui/Overlay';
 import { Select } from '@/components/ui/Select';
@@ -221,6 +222,8 @@ export function PanelBayar({
   const [lihatStruk, setLihatStruk] = useState(false);
   const dibayar = bayar.reduce((a, b) => a + b.jumlah, 0);
   const cukup = dibayar >= ringkasan.total && ringkasan.total > 0;
+  const { printer } = usePrinterStore();
+  const { toko } = useTokoStore();
 
   return (
     <Overlay
@@ -238,6 +241,12 @@ export function PanelBayar({
             <Printer className="lucide" size={16} aria-hidden="true" />
             <span>{lihatStruk ? 'Sembunyikan struk' : 'Pratinjau struk'}</span>
           </button>
+          {lihatStruk ? (
+            <button type="button" className="btn btn-sekunder" onClick={() => window.print()}>
+              <Printer className="lucide" size={16} aria-hidden="true" />
+              <span>Cetak struk</span>
+            </button>
+          ) : null}
           <button type="button" className="btn btn-halus" onClick={onTutup}>
             Batal
           </button>
@@ -250,12 +259,16 @@ export function PanelBayar({
           <div className="kolom-sisi">
             <Struk
               nomor={nomor}
-              waktu="2026-07-29T14:35:00"
+              waktu={new Date().toISOString().slice(0, 19)}
               kasir={kasir}
               meja={meja}
               baris={baris}
               ringkasan={ringkasan}
               pembayaran={bayar}
+              kepalaStruk={printer.kepalaStruk}
+              kakiStruk={printer.kakiStruk}
+              namaToko={toko.nama}
+              lebar={printer.lebarKertas}
             />
           </div>
         ) : null}

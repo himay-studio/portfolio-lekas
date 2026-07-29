@@ -1,15 +1,17 @@
 'use client';
 
+import { Printer } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { PENGATURAN_PAJAK, petaMeja, petaPengguna } from '@/data/operasional';
-import { TRANSAKSI } from '@/data/transaksi';
+import { petaMeja, petaPengguna } from '@/data/operasional';
 import type { BarisBayar } from '@/data/types';
 import { jam, rupiah } from '@/lib/format';
-import { hitungTransaksi } from '@/lib/kasir';
+import { usePajakStore, usePrinterStore, useTokoStore } from '@/lib/pengaturanStore';
+import { hitung } from '@/lib/kasir';
+import { useTransaksiStore } from '@/lib/transaksiStore';
 import { IsiPembayaran } from '@/components/kasir/PanelBayar';
 import { Struk } from '@/components/kasir/Struk';
 import { PageHeader } from '@/components/shell/PageHeader';
-import { Badge, CatatanStage, Kosong } from '@/components/ui/Primitives';
+import { Badge, Kosong } from '@/components/ui/Primitives';
 
 /**
  * Ruang pembayaran.
@@ -20,16 +22,29 @@ import { Badge, CatatanStage, Kosong } from '@/components/ui/Primitives';
  * berdampingan dengan pratinjau struk untuk pembayaran yang perlu diurus pelan
  * pelan: split lintas metode, koreksi nomor referensi, cetak ulang.
  *
- * Dua implementasi terpisah akan berselisih dalam sebulan, dan yang berselisih
- * di sini adalah uang.
+ * Menyelesaikan pembayaran di sini benar benar mengubah status transaksi lewat
+ * `transaksiStore` (lapisan timpa localStorage yang sama dipakai layar
+ * Kasir), sehingga tagihan yang sudah lunas di sini juga lunas di halaman
+ * Transaksi dan di rekap Shift. Stok TIDAK dikurangi lagi di sini: baris demo
+ * yang sudah tertahan sejak data dasar tidak pernah tercatat mengurangi stok
+ * saat ditahan, jadi menguranginya baru saat lunas di sini akan menghitung
+ * dua standar berbeda untuk asal usul angka stok yang sama. Pengurangan stok
+ * yang konsisten hanya terjadi pada transaksi baru yang lahir dari layar
+ * Kasir sendiri.
  */
 export function PembayaranClient() {
+  const { transaksi, selesaikanPembayaran } = useTransaksiStore();
+  const { pajak } = usePajakStore();
+  const { printer } = usePrinterStore();
+  const { toko } = useTokoStore();
+
   const tagihan = useMemo(
-    () => TRANSAKSI.filter((t) => t.status === 'ditahan' || t.status === 'lunas').slice(0, 6),
-    [],
+    () => transaksi.filter((t) => t.status === 'ditahan' || t.status === 'lunas').slice(0, 8),
+    [transaksi],
   );
   const [pilihId, setPilihId] = useState(tagihan[0]?.id ?? '');
   const [bayar, setBayar] = useState<BarisBayar[]>([]);
+  const [barusanLunas, setBarusanLunas] = useState(false);
 
   const t = tagihan.find((x) => x.id === pilihId) ?? tagihan[0];
   if (!t) {
@@ -44,9 +59,25 @@ export function PembayaranClient() {
     );
   }
 
-  const ringkasan = hitungTransaksi(t, PENGATURAN_PAJAK);
+  const ringkasan = hitung(t.baris, {
+    diskonTransaksi: t.diskonTransaksi,
+    servicePersen: t.servicePersen,
+    pajakPersen: t.pajakPersen,
+    pembulatan: pajak.pembulatan,
+    hargaSudahTermasukPajak: pajak.hargaSudahTermasukPajak,
+  });
   const kasir = petaPengguna.get(t.kasirId);
   const meja = t.mejaId ? petaMeja.get(t.mejaId) : null;
+  const dibayar = bayar.reduce((a, b) => a + b.jumlah, 0);
+  const bisaSelesai = t.status === 'ditahan' && dibayar >= ringkasan.total && ringkasan.total > 0;
+
+  function selesaikan() {
+    if (!bisaSelesai) return;
+    selesaikanPembayaran(t.id, bayar);
+    setBayar([]);
+    setBarusanLunas(true);
+    setTimeout(() => setBarusanLunas(false), 2400);
+  }
 
   return (
     <>
@@ -55,8 +86,13 @@ export function PembayaranClient() {
         ket="Selesaikan tagihan yang tertahan, bagi ke beberapa metode, lalu cetak strukanya"
         aksi={(
           <>
-            <button type="button" className="btn btn-bayar">Selesaikan pembayaran</button>
-            <button type="button" className="btn btn-sekunder">Cetak struk</button>
+            <button type="button" className="btn btn-bayar" disabled={!bisaSelesai} onClick={selesaikan}>
+              Selesaikan pembayaran
+            </button>
+            <button type="button" className="btn btn-sekunder" onClick={() => window.print()}>
+              <Printer className="lucide" size={16} aria-hidden="true" />
+              <span>Cetak struk</span>
+            </button>
           </>
         )}
       />
@@ -111,15 +147,22 @@ export function PembayaranClient() {
             </div>
           </section>
 
-          <section className="kartu">
-            <IsiPembayaran ringkasan={ringkasan} bayar={bayar} onBayar={setBayar} />
-          </section>
-
-          <CatatanStage>
-            Menyelesaikan pembayaran di sini belum mengubah status transaksi. Stage 5 menyambungkannya
-            ke penyimpanan demo di localStorage, menambah cetak ke printer termal, dan menautkan
-            hasilnya ke rekap shift.
-          </CatatanStage>
+          {t.status === 'ditahan' ? (
+            <section className="kartu">
+              <IsiPembayaran ringkasan={ringkasan} bayar={bayar} onBayar={setBayar} />
+            </section>
+          ) : (
+            <section className="kartu">
+              <div className="kartu-judul">
+                <h3>Sudah lunas</h3>
+                {barusanLunas ? <Badge tone="success">Baru diselesaikan</Badge> : null}
+              </div>
+              <p className="bantuan">
+                Transaksi ini sudah dibayar lunas. Gunakan tombol Cetak struk di atas untuk mencetak
+                ulang, atau buka halaman Transaksi untuk rinciannya.
+              </p>
+            </section>
+          )}
         </div>
 
         <div className="kolom-sisi">
@@ -132,6 +175,10 @@ export function PembayaranClient() {
             baris={t.baris}
             ringkasan={ringkasan}
             pembayaran={bayar.length > 0 ? bayar : t.pembayaran}
+            kepalaStruk={printer.kepalaStruk}
+            kakiStruk={printer.kakiStruk}
+            namaToko={toko.nama}
+            lebar={printer.lebarKertas}
           />
         </div>
       </div>

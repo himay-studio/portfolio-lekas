@@ -20,6 +20,10 @@ export function Struk({
   baris,
   ringkasan,
   pembayaran,
+  kepalaStruk = PENGATURAN_PRINTER.kepalaStruk,
+  kakiStruk = PENGATURAN_PRINTER.kakiStruk,
+  namaToko = PENGATURAN_TOKO.nama,
+  lebar = PENGATURAN_PRINTER.lebarKertas,
 }: {
   nomor: string;
   waktu: string;
@@ -28,14 +32,20 @@ export function Struk({
   baris: Pick<BarisKeranjang, 'nama' | 'qty' | 'hargaSatuan' | 'diskonItem' | 'opsi'>[];
   ringkasan: RingkasanUang;
   pembayaran: BarisBayar[];
+  /** Kalau tidak diberikan, dibaca dari pengaturan printer dasar. */
+  kepalaStruk?: string;
+  kakiStruk?: string;
+  namaToko?: string;
+  /** 58mm untuk printer kecil (32 karakter), 80mm untuk printer standar. */
+  lebar?: 58 | 80;
 }) {
   const dibayar = pembayaran.reduce((a, p) => a + p.jumlah, 0);
 
   return (
-    <div className="struk">
+    <div className="struk" data-lebar={lebar} data-area-cetak="struk">
       <div className="struk-tengah">
-        {PENGATURAN_PRINTER.kepalaStruk.split('\n').map((b) => (
-          <div key={b}>{b}</div>
+        {kepalaStruk.split('\n').map((b, i) => (
+          <div key={`${b}-${i}`}>{b}</div>
         ))}
       </div>
       <hr className="struk-garis" />
@@ -95,10 +105,10 @@ export function Struk({
 
       <hr className="struk-garis" />
       <div className="struk-tengah">
-        {PENGATURAN_PRINTER.kakiStruk.split('\n').map((b) => (
-          <div key={b}>{b}</div>
+        {kakiStruk.split('\n').map((b, i) => (
+          <div key={`${b}-${i}`}>{b}</div>
         ))}
-        <div style={{ marginTop: 6 }}>{PENGATURAN_TOKO.nama}</div>
+        <div style={{ marginTop: 6 }}>{namaToko}</div>
       </div>
     </div>
   );

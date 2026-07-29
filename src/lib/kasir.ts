@@ -95,6 +95,18 @@ export interface KonteksHitung {
   servicePersen: number;
   pajakPersen: number;
   pembulatan: number;
+  /**
+   * Kalau true, `hargaSatuan` pada tiap baris DIANGGAP SUDAH memuat pajak dan
+   * service. Pajak lalu DIEKSTRAK dari dasar kena ditambah service, bukan
+   * ditambahkan di atasnya, dan totalnya tidak naik lagi karena pajak. Kalau
+   * false (bawaan), pajak dan service DITAMBAHKAN di atas harga seperti biasa.
+   *
+   * Ini menyentuh SETIAP total di aplikasi karena `hitung()` adalah satu
+   * satunya mesin uang, jadi diperlakukan sebagai pekerjaan tersendiri: sekali
+   * dibalik, tidak ada lagi tempat aritmetika bisa berselisih dengan pratinjau
+   * di halaman Pengaturan Pajak.
+   */
+  hargaSudahTermasukPajak?: boolean;
 }
 
 export function hitung(
@@ -109,9 +121,23 @@ export function hitung(
   const dasarKena = subtotal - diskonTransaksi;
 
   const service = Math.round((dasarKena * ctx.servicePersen) / 100);
-  const pajak = Math.round(((dasarKena + service) * ctx.pajakPersen) / 100);
 
-  const sebelumBulat = dasarKena + service + pajak;
+  let pajak: number;
+  let sebelumBulat: number;
+  if (ctx.hargaSudahTermasukPajak) {
+    // Pajak sudah ada DI DALAM dasarKena + service, jadi diekstrak, bukan
+    // ditambahkan. Total sebelum pembulatan tidak berubah karena penambahan
+    // pajak, karena pajaknya memang sudah ada di sana sejak awal.
+    const dasarDenganService = dasarKena + service;
+    pajak = ctx.pajakPersen > 0
+      ? Math.round(dasarDenganService - dasarDenganService / (1 + ctx.pajakPersen / 100))
+      : 0;
+    sebelumBulat = dasarDenganService;
+  } else {
+    pajak = Math.round(((dasarKena + service) * ctx.pajakPersen) / 100);
+    sebelumBulat = dasarKena + service + pajak;
+  }
+
   const total = ctx.pembulatan > 0
     ? Math.round(sebelumBulat / ctx.pembulatan) * ctx.pembulatan
     : sebelumBulat;
@@ -137,6 +163,7 @@ export function hitungTransaksi(t: Transaksi, pengaturan: PengaturanPajak): Ring
     servicePersen: t.servicePersen,
     pajakPersen: t.pajakPersen,
     pembulatan: pengaturan.pembulatan,
+    hargaSudahTermasukPajak: pengaturan.hargaSudahTermasukPajak,
   });
 }
 

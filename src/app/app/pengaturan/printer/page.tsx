@@ -15,7 +15,6 @@ export default function HalamanPrinter() {
         judul="Printer dan struk"
         ket="Yang diatur di sini langsung terlihat di pratinjau struk di sebelah kanan."
         remah={[{ label: 'Pengaturan', href: '/app/pengaturan/' }, { label: 'Printer dan struk' }]}
-        aksi={<button type="button" className="btn">Simpan perubahan</button>}
       />
       <PengaturanNav />
       <PrinterForm />

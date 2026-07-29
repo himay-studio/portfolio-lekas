@@ -3,7 +3,7 @@ import { PENGATURAN_PAJAK, petaPengguna } from '@/data/operasional';
 import { TRANSAKSI } from '@/data/transaksi';
 import type { MetodeBayar, Transaksi, WarnaDeret } from '@/data/types';
 import { hitungTransaksi } from './kasir';
-import { keTanggal } from './format';
+import { awalMinggu, keTanggal, namaBulan, tambahHari, tanggalPendek } from './format';
 
 /**
  * Turunan laporan.
@@ -130,4 +130,36 @@ export function perHari(daftar: Transaksi[] = TRANSAKSI_SAH) {
     per.set(k, (per.get(k) ?? 0) + totalTransaksi(t));
   }
   return [...per.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([tanggal, nilai]) => ({ tanggal, nilai }));
+}
+
+/**
+ * Penjualan per minggu (Senin sampai Minggu), urut dari yang paling lama.
+ * Dipakai Laporan saat pengelompokan "Mingguan" dipilih.
+ */
+export function perMinggu(daftar: Transaksi[] = TRANSAKSI_SAH) {
+  const per = new Map<string, number>();
+  for (const t of daftar) {
+    const awal = awalMinggu(t.waktu.slice(0, 10));
+    per.set(awal, (per.get(awal) ?? 0) + totalTransaksi(t));
+  }
+  return [...per.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([awal, nilai]) => {
+    const akhir = tambahHari(awal, 6);
+    return { awal, akhir, label: `${tanggalPendek(awal).replace(/ \d{4}$/, '')} - ${tanggalPendek(akhir)}`, nilai };
+  });
+}
+
+/**
+ * Penjualan per bulan kalender, urut dari yang paling lama. Dipakai Laporan
+ * saat pengelompokan "Bulanan" dipilih.
+ */
+export function perBulan(daftar: Transaksi[] = TRANSAKSI_SAH) {
+  const per = new Map<string, number>();
+  for (const t of daftar) {
+    const kunci = t.waktu.slice(0, 7);
+    per.set(kunci, (per.get(kunci) ?? 0) + totalTransaksi(t));
+  }
+  return [...per.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([bulan, nilai]) => {
+    const [y, m] = bulan.split('-').map(Number);
+    return { bulan, label: `${namaBulan(m - 1)} ${y}`, nilai };
+  });
 }

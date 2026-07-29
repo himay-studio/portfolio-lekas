@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { PENGATURAN_PAJAK, PENGATURAN_PRINTER, PENGGUNA } from '@/data/operasional';
+import { Printer } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { PENGGUNA } from '@/data/operasional';
 import { hitung } from '@/lib/kasir';
+import { usePajakStore, usePrinterStore } from '@/lib/pengaturanStore';
 import { Struk } from '@/components/kasir/Struk';
-import { CatatanStage, Sakelar, Stepper } from '@/components/ui/Primitives';
+import { Badge, Sakelar, Stepper } from '@/components/ui/Primitives';
 import { Select } from '@/components/ui/Select';
 
 const OPSI_LEBAR = [
@@ -23,23 +25,65 @@ const CONTOH = [
   { nama: 'Croissant', qty: 1, hargaSatuan: 18000, diskonItem: null, opsi: [] },
 ];
 
+/**
+ * Form printer dan struk. Kepala, kaki, dan lebar kertas di sini langsung
+ * terlihat di pratinjau struk di sebelah kanan SEBELUM disimpan (`Struk`
+ * membaca dari state form ini, bukan dari pengaturan yang sudah tersimpan),
+ * dan setelah disimpan tersambung ke `pengaturanStore` yang sama dibaca
+ * layar Kasir dan Pembayaran, jadi lebar 58 mm yang dipilih di sini benar
+ * benar memendekkan struk yang tercetak di sana.
+ */
 export function PrinterForm() {
-  const [printer, setPrinter] = useState(PENGATURAN_PRINTER.nama);
-  const [lebar, setLebar] = useState(String(PENGATURAN_PRINTER.lebarKertas));
-  const [otomatis, setOtomatis] = useState(PENGATURAN_PRINTER.cetakOtomatis);
-  const [salinan, setSalinan] = useState(PENGATURAN_PRINTER.salinan);
-  const [kepala, setKepala] = useState(PENGATURAN_PRINTER.kepalaStruk);
-  const [kaki, setKaki] = useState(PENGATURAN_PRINTER.kakiStruk);
+  const { printer: tersimpan, simpanPrinter, siap } = usePrinterStore();
+  const { pajak } = usePajakStore();
+  const [printer, setPrinter] = useState(tersimpan.nama);
+  const [lebar, setLebar] = useState(String(tersimpan.lebarKertas));
+  const [otomatis, setOtomatis] = useState(tersimpan.cetakOtomatis);
+  const [salinan, setSalinan] = useState(tersimpan.salinan);
+  const [kepala, setKepala] = useState(tersimpan.kepalaStruk);
+  const [kaki, setKaki] = useState(tersimpan.kakiStruk);
+  const [barusanSimpan, setBarusanSimpan] = useState(false);
+
+  useEffect(() => {
+    if (!siap) return;
+    setPrinter(tersimpan.nama);
+    setLebar(String(tersimpan.lebarKertas));
+    setOtomatis(tersimpan.cetakOtomatis);
+    setSalinan(tersimpan.salinan);
+    setKepala(tersimpan.kepalaStruk);
+    setKaki(tersimpan.kakiStruk);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siap]);
 
   const ringkasan = hitung(CONTOH, {
     diskonTransaksi: null,
-    servicePersen: PENGATURAN_PAJAK.servicePersen,
-    pajakPersen: PENGATURAN_PAJAK.pajakPersen,
-    pembulatan: PENGATURAN_PAJAK.pembulatan,
+    servicePersen: pajak.serviceAktif ? pajak.servicePersen : 0,
+    pajakPersen: pajak.pajakAktif ? pajak.pajakPersen : 0,
+    pembulatan: pajak.pembulatan,
+    hargaSudahTermasukPajak: pajak.hargaSudahTermasukPajak,
   });
 
+  function simpan() {
+    simpanPrinter({
+      nama: printer,
+      lebarKertas: Number(lebar) as 58 | 80,
+      cetakOtomatis: otomatis,
+      salinan,
+      kepalaStruk: kepala,
+      kakiStruk: kaki,
+    });
+    setBarusanSimpan(true);
+    setTimeout(() => setBarusanSimpan(false), 2400);
+  }
+
   return (
-    <div className="kolom-2">
+    <form
+      className="kolom-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        simpan();
+      }}
+    >
       <section className="kartu">
         <div className="kartu-judul">
           <h2>Printer</h2>
@@ -82,11 +126,22 @@ export function PrinterForm() {
             <label htmlFor="struk-kaki">Kaki struk</label>
             <textarea id="struk-kaki" className="textarea" value={kaki} onChange={(e) => setKaki(e.target.value)} />
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+            <button type="submit" className="btn">Simpan perubahan</button>
+            {barusanSimpan ? <Badge tone="success">Tersimpan</Badge> : null}
+          </div>
         </div>
       </section>
 
       <div className="kolom-sisi">
-        <h2>Pratinjau struk</h2>
+        <div className="kartu-judul">
+          <h2>Pratinjau struk</h2>
+          <button type="button" className="btn btn-sekunder btn-sm" onClick={() => window.print()}>
+            <Printer className="lucide" size={16} aria-hidden="true" />
+            <span>Cetak pratinjau</span>
+          </button>
+        </div>
         <Struk
           nomor="TRX-20260729-0018"
           waktu="2026-07-29T14:35:00"
@@ -95,14 +150,11 @@ export function PrinterForm() {
           baris={CONTOH}
           ringkasan={ringkasan}
           pembayaran={[{ metode: 'tunai', jumlah: 100000 }]}
+          kepalaStruk={kepala}
+          kakiStruk={kaki}
+          lebar={Number(lebar) as 58 | 80}
         />
-
-        <CatatanStage>
-          Kepala dan kaki struk di pratinjau masih dibaca dari data demo, bukan dari kotak teks di
-          sebelah. Stage 5 menyambungkannya sekaligus menambah pemilihan lebar 58 mm yang benar
-          benar mengubah lebar baris.
-        </CatatanStage>
       </div>
-    </div>
+    </form>
   );
 }

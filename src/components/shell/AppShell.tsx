@@ -4,8 +4,8 @@ import { Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { PENGGUNA } from '@/data/operasional';
 import { usePreferensi } from '@/lib/storage';
+import { useSesi } from '@/lib/sesi';
 import { Avatar } from '@/components/ui/Primitives';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [laci, setLaci] = useState(false);
   const modeKasir = jalur.startsWith('/app/kasir');
   const aktif = itemAktif(jalur);
-  const pengguna = PENGGUNA[0];
+  const [pengguna] = useSesi();
 
   return (
     <div className="app" data-lipat={lipat ? 'ya' : 'tidak'} data-mode={modeKasir ? 'kasir' : 'standar'}>

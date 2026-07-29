@@ -1,6 +1,7 @@
 'use client';
 
 import { Search } from 'lucide-react';
+import { forwardRef } from 'react';
 import { KATEGORI, statusStok } from '@/data/katalog';
 import type { Produk } from '@/data/types';
 import { rupiah } from '@/lib/format';
@@ -14,36 +15,53 @@ import { inisialProduk, warnaProduk } from './ubin';
  * bergulir. Itu syaratnya supaya keranjang tetap terlihat sementara kasir
  * menelusuri katalog; kalau keduanya berbagi satu wilayah gulir, tombol Bayar
  * hilang dari layar tepat saat dibutuhkan.
+ *
+ * Kolom pencarian dobel fungsi sebagai jalur pemindaian barcode: pemindai
+ * genggam sungguhan mengetik kodenya lalu mengirim Enter, jadi Enter pada teks
+ * yang cocok persis dengan barcode produk langsung memasukkannya ke
+ * keranjang, sama seperti mengetuk ubinnya.
  */
-export function GridProduk({
-  produk,
-  kategori,
-  onKategori,
-  cari,
-  onCari,
-  onPilih,
-}: {
+export const GridProduk = forwardRef<HTMLInputElement, {
   produk: Produk[];
   kategori: string;
   onKategori: (k: string) => void;
   cari: string;
   onCari: (c: string) => void;
   onPilih: (p: Produk) => void;
-}) {
+  onPindai: (kode: string) => void;
+  barcodeSalah?: boolean;
+}>(function GridProduk({
+  produk,
+  kategori,
+  onKategori,
+  cari,
+  onCari,
+  onPilih,
+  onPindai,
+  barcodeSalah = false,
+}, ref) {
   return (
     <>
       <div className="kasir-cari">
         <Search className="lucide" size={18} aria-hidden="true" style={{ color: 'var(--text-muted)', flex: '0 0 auto' }} />
-        <label className="sr" htmlFor="kasir-cari">Cari produk, SKU, atau barcode</label>
+        <label className="sr" htmlFor="kasir-cari">Cari produk, SKU, atau barcode. Tekan F2 untuk fokus, Enter memindai barcode</label>
         <input
+          ref={ref}
           id="kasir-cari"
           className="input"
           type="search"
           value={cari}
           onChange={(e) => onCari(e.target.value)}
-          placeholder="Nama produk, SKU, atau barcode"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && cari.trim() !== '') {
+              e.preventDefault();
+              onPindai(cari);
+            }
+          }}
+          placeholder="Nama produk, SKU, atau barcode, lalu Enter untuk memindai"
           style={{ border: 0, height: 32, padding: 0 }}
         />
+        {barcodeSalah ? <Badge tone="danger">Barcode tidak ditemukan</Badge> : null}
       </div>
 
       {/* Chip kategori horizontal, pengganti rel kiri di bawah 1280px. */}
@@ -112,7 +130,7 @@ export function GridProduk({
       </div>
     </>
   );
-}
+});
 
 /** Rel kategori kolom kiri, hanya tampil di 1280px ke atas. */
 export function RelKategori({

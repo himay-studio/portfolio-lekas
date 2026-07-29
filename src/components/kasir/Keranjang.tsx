@@ -30,6 +30,7 @@ export function Keranjang({
   onBayar,
   onKosongkan,
   lembar = false,
+  diskonTrxDiizinkan = true,
 }: {
   baris: BarisKeranjang[];
   ringkasan: RingkasanUang;
@@ -43,6 +44,8 @@ export function Keranjang({
   onKosongkan: () => void;
   /** Bentuk lembar bawah untuk mobile. Isinya sama persis, hanya kotaknya beda. */
   lembar?: boolean;
+  /** R42/HAK_AKSES: peran kasir tidak boleh memberi diskon transaksi, hanya diskon item. */
+  diskonTrxDiizinkan?: boolean;
 }) {
   const kosong = baris.length === 0;
 
@@ -132,7 +135,13 @@ export function Keranjang({
 
         <div className="krj-aksi">
           <div className="krj-aksi-baris">
-            <button type="button" className="btn btn-sekunder" onClick={onDiskonTransaksi} disabled={kosong}>
+            <button
+              type="button"
+              className="btn btn-sekunder"
+              onClick={onDiskonTransaksi}
+              disabled={kosong || !diskonTrxDiizinkan}
+              title={diskonTrxDiizinkan ? undefined : 'Peran kasir tidak memiliki hak memberi diskon transaksi'}
+            >
               <Percent className="lucide" size={16} aria-hidden="true" />
               <span>Diskon</span>
             </button>

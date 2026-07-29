@@ -74,6 +74,25 @@ export function kunciTanggal(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** `2026-07-29` ditambah/dikurangi `n` hari, tetap dalam bentuk kunci tanggal. */
+export function tambahHari(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return kunciTanggal(new Date(y, m - 1, d + n));
+}
+
+/** Jumlah hari dari `a` ke `b` (positif kalau `b` lebih baru). */
+export function selisihHari(a: string, b: string): number {
+  return Math.round((keTanggal(b).getTime() - keTanggal(a).getTime()) / 86400000);
+}
+
+/** Senin di minggu yang sama dengan `iso`, dalam bentuk kunci tanggal. */
+export function awalMinggu(iso: string): string {
+  const d = keTanggal(iso);
+  const hari = d.getDay();
+  const geser = hari === 0 ? -6 : 1 - hari;
+  return kunciTanggal(new Date(d.getFullYear(), d.getMonth(), d.getDate() + geser));
+}
+
 /** Durasi antar dua waktu dalam bentuk `4j 12m`. */
 export function durasi(mulai: string, selesai: string): string {
   const menit = Math.max(0, Math.round((keTanggal(selesai).getTime() - keTanggal(mulai).getTime()) / 60000));

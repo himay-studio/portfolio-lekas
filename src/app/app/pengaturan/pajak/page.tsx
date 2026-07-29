@@ -15,7 +15,6 @@ export default function HalamanPajak() {
         judul="Pajak dan service"
         ket="Urutannya mengikat: service charge dari dasar kena, lalu pajak dari dasar kena ditambah service charge."
         remah={[{ label: 'Pengaturan', href: '/app/pengaturan/' }, { label: 'Pajak dan service' }]}
-        aksi={<button type="button" className="btn">Simpan perubahan</button>}
       />
       <PengaturanNav />
       <PajakForm />

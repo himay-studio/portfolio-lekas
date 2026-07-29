@@ -213,22 +213,6 @@ export function Kpi({
   );
 }
 
-/**
- * Penanda bahwa layar ini masih kerangka Stage 3.
- *
- * Ditulis di layar, bukan disembunyikan di komentar kode. Placeholder yang
- * tidak beranotasi tidak bisa dibedakan dari fitur yang dianggap sudah selesai,
- * dan itulah cara sebuah build tampak lengkap padahal separuh isinya belum ada.
- */
-export function CatatanStage({ children }: { children: ReactNode }) {
-  return (
-    <p className="catatan-stage">
-      <b>Kerangka Stage 3.</b>
-      <span>{children}</span>
-    </p>
-  );
-}
-
 export function Titik({ tone }: { tone: Tone }) {
   return <span className="kb-titik" style={{ background: WARNA_TONE[tone] }} aria-hidden="true" />;
 }

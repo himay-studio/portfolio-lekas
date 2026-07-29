@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LABEL_PERAN, PENGGUNA } from '@/data/operasional';
 import { Avatar } from '@/components/ui/Primitives';
+import { tulisSesi } from '@/lib/sesi';
 
 const KANDIDAT = [PENGGUNA[0], PENGGUNA[1], PENGGUNA[2]];
 
@@ -14,10 +15,10 @@ const KANDIDAT = [PENGGUNA[0], PENGGUNA[1], PENGGUNA[2]];
  * layar. Demo portfolio yang meminta orang menebak kata sandi akan kehilangan
  * pengunjung di detik pertama, jadi satu klik langsung masuk.
  *
- * Peran yang dipilih menentukan hak akses yang ditampilkan di Pengaturan.
- * Di Stage 3 pilihan itu belum mengubah apa apa selain tujuan navigasi, dan
- * itu ditulis apa adanya di layar supaya tidak terbaca sebagai fitur yang
- * sudah jadi.
+ * Peran yang dipilih menyambung ke `lib/sesi.ts`: seluruh aplikasi membaca
+ * pengguna yang sedang masuk dari sana, jadi tombol yang tidak diizinkan
+ * peran ini (diskon transaksi, void, kelola produk, dan seterusnya) memang
+ * disembunyikan atau dinonaktifkan, bukan cuma teori di halaman Pengguna.
  */
 export function LoginForm() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export function LoginForm() {
       className="form-grid"
       onSubmit={(e) => {
         e.preventDefault();
+        tulisSesi(dipilih.id);
         router.push(dipilih.peran === 'kasir' ? '/app/kasir/' : '/app/');
       }}
     >
