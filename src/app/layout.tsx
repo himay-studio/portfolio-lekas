@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Manrope } from 'next/font/google';
 import './globals.css';
 import './app.css';
-import { GtmHead, GtmNoScript } from '@/components/Analytics';
+import { GtmHead, GtmNoScript, MetaPixelClient } from '@/components/Analytics';
 
 /**
  * Tiga keluarga huruf sesuai DESIGN.md 4.1, dimuat lewat `next/font/google`
@@ -74,6 +74,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {/* R36: the noscript iframe immediately after the opening body tag */}
         <GtmNoScript />
+        {/* HIM-360: Meta Pixel (browser) + CAPI trigger client, no-op-safe */}
+        <MetaPixelClient />
         <a className="lewati" href="#isi">Lewati ke konten utama</a>
         {children}
       </body>
