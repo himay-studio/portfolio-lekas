@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans, Manrope } from 'next/font/google';
 import './globals.css';
 import './app.css';
+import { GtmHead, GtmNoScript } from '@/components/Analytics';
 
 /**
  * Tiga keluarga huruf sesuai DESIGN.md 4.1, dimuat lewat `next/font/google`
@@ -66,7 +67,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${display.variable} ${ui.variable} ${mono.variable}`}>
+      <head>
+        {/* R36: GTM as high in the head as the framework allows */}
+        <GtmHead />
+      </head>
       <body>
+        {/* R36: the noscript iframe immediately after the opening body tag */}
+        <GtmNoScript />
         <a className="lewati" href="#isi">Lewati ke konten utama</a>
         {children}
       </body>
