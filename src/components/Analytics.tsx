@@ -15,11 +15,26 @@ import Script from "next/script";
 
 const GTM_ID = "GTM-WZJZTSKG";
 
+/* HIM-356: portfolio industry classification, emitted as `portfolio_category`
+   on the GTM dataLayer so retargeting audiences can be segmented per brand
+   category. Lekas is a POS (kasir) app for retail stores and F&B kiosks
+   (README: "toko retail dan kedai F&B skala UMKM"), which does not cleanly
+   fit any of ecommerce/fashion/distributor/food-and-beverage/services/hotel
+   (it spans both physical retail checkout and food-service checkout, not an
+   online store and not a single-brand restaurant), so a new value "retail"
+   is used here rather than forcing a bad fit into one of the given options.
+   This repo had zero prior tracking wiring beyond GTM (no site.ts, no Meta
+   Pixel client component), so this is a local constant like GTM_ID above. */
+const PORTFOLIO_CATEGORY: string | null = "retail";
+
 export function GtmHead() {
   if (!GTM_ID) return null;
+  const categoryPush = PORTFOLIO_CATEGORY
+    ? `window.dataLayer=window.dataLayer||[];window.dataLayer.push({portfolio_category:${JSON.stringify(PORTFOLIO_CATEGORY)}});`
+    : "";
   return (
     <Script id="gtm-head" strategy="afterInteractive">
-      {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
+      {`${categoryPush}(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`}
     </Script>
   );
 }
