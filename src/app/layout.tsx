@@ -41,6 +41,9 @@ export const metadata: Metadata = {
   title: 'Lekas, Portfolio Aplikasi Kasir by Himay Studio',
   description:
     'Demo aplikasi kasir Lekas untuk toko retail dan kedai F&B. Proyek pembuatan aplikasi web oleh Himay Studio. Ingin aplikasi seperti ini? Hubungi kami.',
+  alternates: {
+    canonical: '/',
+  },
   applicationName: 'Lekas',
   icons: {
     icon: [
