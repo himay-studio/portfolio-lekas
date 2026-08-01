@@ -54,6 +54,7 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   openGraph: {
+    url: 'https://portfolio-lekas.himaystudio.com/',
     title: 'Lekas, aplikasi kasir untuk retail dan F&B',
     description: 'Cepat di kasir, pas di laci. Demo portfolio aplikasi kasir oleh Himay Studio.',
     images: ['/og-lekas.png'],
